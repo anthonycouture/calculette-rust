@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 enum Operations {
     Plus,
     Moins,
@@ -26,28 +24,28 @@ impl Operations{
         }
     }
 
-    pub fn run_read_result(self, x: f32, y:f32){
-        Operations::read_result(Operations::run(self, x, y));
+    pub fn run_read_result(self, x: f32, y:f32) -> f32{
+        Operations::read_result(Operations::run(self, x, y))
     }
 }
 
 struct Op {
     x : f32,
-    operation : Option<Box<(Operations, Op)>>
+    operation : Option<(Operations, Box<Op>)>
 }
 
 fn readOp(op : Op) -> f32 {
     match op {
         Op { x: a, operation : None } => a,
-        Op {x: a, operation: Some( op))} => *op.run_read_result(a, readOp(t)),
-        _ => 1
+        Op {x: a, operation: Some( (op, ref t))} => Operations::run_read_result(op,a, readOp(t)),
+        _ => 1.00
     }
 }
 
 
 fn main() {
     println!("Hello, world!");
-    let add = Op {x:1_f32,operation:Some(Box::new((Operations::Plus, Op { x: 1_f32, operation: None })))};
+    let add = Op {x:1_f32,operation:Some((Operations::Plus, Box::new(Op { x: 1_f32, operation: None })))};
     /*let minus = Op {x:3_f32,y:2_f32,operation:Operations::Moins};
     let div_zeo = Op {x:3_f32,y:0_f32,operation:Operations::Division};
     let div = Op {x:3_f32,y:2_f32,operation:Operations::Division};*/
