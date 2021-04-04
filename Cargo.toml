@@ -1,0 +1,9 @@
+[package]
+name = "calculette"
+version = "0.1.0"
+authors = ["Anthony Couture <antobox28@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
