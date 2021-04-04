@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 enum Operations {
     Plus,
     Moins,
@@ -11,16 +13,16 @@ impl Operations{
             Self::Moins => Ok(x-y),
 
             Self::Division => match y {
-                0_f32 => Err("Division par 0"),
+                y if y == 0.00 => Err("Division par 0"),
                 _ => Ok(x/y)
             }
         }
     }
 
-    fn read_result(result : Result<f32, &'static str>){
+    fn read_result(result : Result<f32, &'static str>) -> f32 {
         match result {
-            Ok(v) => println!("result: {:?}", v),
-            Err(e) => println!("error: {:?}", e),
+            Ok(v) => v,
+            Err(e) => panic!(e),
         }
     }
 
@@ -31,19 +33,26 @@ impl Operations{
 
 struct Op {
     x : f32,
-    y: f32,
-    operation : Operations
+    operation : Option<Box<(Operations, Op)>>
+}
+
+fn readOp(op : Op) -> f32 {
+    match op {
+        Op { x: a, operation : None } => a,
+        Op {x: a, operation: Some( op))} => *op.run_read_result(a, readOp(t)),
+        _ => 1
+    }
 }
 
 
 fn main() {
     println!("Hello, world!");
-    let add = Op {x:1_f32,y:2_f32,operation:Operations::Plus};
-    let minus = Op {x:3_f32,y:2_f32,operation:Operations::Moins};
+    let add = Op {x:1_f32,operation:Some(Box::new((Operations::Plus, Op { x: 1_f32, operation: None })))};
+    /*let minus = Op {x:3_f32,y:2_f32,operation:Operations::Moins};
     let div_zeo = Op {x:3_f32,y:0_f32,operation:Operations::Division};
-    let div = Op {x:3_f32,y:2_f32,operation:Operations::Division};
-    add.operation.run_read_result(add.x, add.y);
-    minus.operation.run_read_result(minus.x, minus.y);
+    let div = Op {x:3_f32,y:2_f32,operation:Operations::Division};*/
+    println!("{}",readOp(add));
+    /*minus.operation.run_read_result(minus.x, minus.y);
     div_zeo.operation.run_read_result(div_zeo.x, div_zeo.y);
-    div.operation.run_read_result(div.x, div.y);
+    div.operation.run_read_result(div.x, div.y);*/
 }
