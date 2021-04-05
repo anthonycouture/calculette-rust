@@ -25,7 +25,7 @@ impl Operations {
         }
     }
 
-    pub fn run_read_result(&self, x: f32, y: f32) -> f32 {
+    fn run_read_result(&self, x: f32, y: f32) -> f32 {
         Operations::read_result(Operations::run(self, x, y))
     }
 }
