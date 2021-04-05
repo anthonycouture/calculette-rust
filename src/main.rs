@@ -51,9 +51,11 @@ fn main() {
     let minus = Op {x:3_f32,operation:Some((Operations::Moins, Box::new(Op{ x: 2_f32, operation: None})))};
     let div_zero = Op {x:3_f32,operation:Some((Operations::Division, Box::new(Op{ x: 0_f32, operation: None})))};
     let div = Op {x:3_f32,operation:Some((Operations::Division, Box::new(Op{ x: 2_f32, operation: None})))};
+    let div_and_add = Op {x:1_f32,operation:Some((Operations::Plus, Box::new(Op { x: 5_f32, operation: Some((Operations::Division, Box::new(Op { x: 2_f32, operation: None }))) })))};
     println!("{}", &add.read_op());
     println!("{}", &minus.read_op());
     println!("{}", &div.read_op());
+    println!("{}", &div_and_add.read_op());
     // Decommente ligne ci-dessous le programme plante à cause d'une divion par 0
     //println!("{}", &div_zero.read_op());
 
