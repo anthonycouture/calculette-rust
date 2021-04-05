@@ -36,10 +36,17 @@ struct Operation {
 }
 
 impl Operation {
-    fn read_op(&self) -> f32 {
+    pub fn new(nombre:f32, operation_suite: Option<(Operateur, Operation)>) -> Self{
+        match operation_suite {
+            None => Self{ x: nombre, operation : None},
+            Some((operateur, suite)) => Self{x: nombre, operation: Some((operateur, Box::new(suite)))}
+        }
+    }
+
+    fn calcule_operation(&self) -> f32 {
         match self {
             Self { x: a, operation: None } => *a,
-            Self { x: a, operation: Some((op, ref t)) } => op.run_read_result(*a, t.read_op())
+            Self { x: a, operation: Some((op, ref t)) } => op.run_read_result(*a, t.calcule_operation())
         }
     }
 }
@@ -47,17 +54,17 @@ impl Operation {
 
 fn main() {
     println!("Hello, world!");
-    let addition = Operation { x: 1_f32, operation: Some((Operateur::Plus, Box::new(Operation { x: 1_f32, operation: None }))) };
-    let soustraction = Operation { x: 3_f32, operation: Some((Operateur::Moins, Box::new(Operation { x: 2_f32, operation: None }))) };
-    let division = Operation { x: 3_f32, operation: Some((Operateur::Division, Box::new(Operation { x: 2_f32, operation: None }))) };
-    let multiplication = Operation { x: 3_f32, operation: Some((Operateur::Multiplication, Box::new(Operation { x: 2_f32, operation: None }))) };
-    let division_and_addition = Operation { x: 1_f32, operation: Some((Operateur::Plus, Box::new(Operation { x: 5_f32, operation: Some((Operateur::Division, Box::new(Operation { x: 2_f32, operation: None }))) }))) };
-    println!("Résultat de 1+1 = {}", &addition.read_op());
-    println!("Résultat de 3-2 = {}", &soustraction.read_op());
-    println!("Résultat de 3/2 = {}", &division.read_op());
-    println!("Résultat de 3*2 = {}", &multiplication.read_op());
-    println!("Résultat de 1+5/2 = {}", &division_and_addition.read_op());
+    let addition = Operation::new(1_f32, Some((Operateur::Plus, Operation { x: 1_f32, operation: None })));
+    let soustraction = Operation::new(3_f32,Some((Operateur::Moins, Operation { x: 2_f32, operation: None })));
+    let division = Operation::new(3_f32, Some((Operateur::Division,Operation { x: 2_f32, operation: None })));
+    let multiplication = Operation::new(3_f32, Some((Operateur::Multiplication, Operation { x: 2_f32, operation: None })));
+    let division_and_addition = Operation::new(1_f32, Some((Operateur::Plus, Operation::new(5_f32, Some((Operateur::Division, Operation { x: 2_f32, operation: None })))))) ;
+    println!("Résultat de 1+1 = {}", &addition.calcule_operation());
+    println!("Résultat de 3-2 = {}", &soustraction.calcule_operation());
+    println!("Résultat de 3/2 = {}", &division.calcule_operation());
+    println!("Résultat de 3*2 = {}", &multiplication.calcule_operation());
+    println!("Résultat de 1+5/2 = {}", &division_and_addition.calcule_operation());
     // Decommente les lignes ci-dessous le programme plante à cause d'une divion par 0
-    /*let division_zero = Operation { x: 3_f32, operation: Some((Operateur::Division, Box::new(Operation { x: 0_f32, operation: None }))) };
-    println!("Résultat de la divison 3/0 = {}", &division_zero.read_op());*/
+    /*let division_zero = Operation::new(3_f32, Some((Operateur::Division, Operation { x: 0_f32, operation: None })));
+    println!("Résultat de la divison 3/0 = {}", &division_zero.calcule_operation());*/
 }
