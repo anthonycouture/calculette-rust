@@ -1,10 +1,10 @@
-enum Operations {
+enum Operateur {
     Plus,
     Moins,
     Division,
 }
 
-impl Operations {
+impl Operateur {
 
     fn run(&self, x: f32, y: f32) -> Result<f32, &'static str> {
         match self {
@@ -26,16 +26,16 @@ impl Operations {
     }
 
     fn run_read_result(&self, x: f32, y: f32) -> f32 {
-        Operations::read_result(Operations::run(self, x, y))
+        Operateur::read_result(Operateur::run(self, x, y))
     }
 }
 
-struct Op {
+struct Operation {
     x: f32,
-    operation: Option<(Operations, Box<Op>)>,
+    operation: Option<(Operateur, Box<Operation>)>,
 }
 
-impl Op {
+impl Operation {
     fn read_op(&self) -> f32 {
         match self {
             Self { x: a, operation: None } => *a,
@@ -47,11 +47,11 @@ impl Op {
 
 fn main() {
     println!("Hello, world!");
-    let add = Op { x: 1_f32, operation: Some((Operations::Plus, Box::new(Op { x: 1_f32, operation: None }))) };
-    let minus = Op {x:3_f32,operation:Some((Operations::Moins, Box::new(Op{ x: 2_f32, operation: None})))};
-    let div_zero = Op {x:3_f32,operation:Some((Operations::Division, Box::new(Op{ x: 0_f32, operation: None})))};
-    let div = Op {x:3_f32,operation:Some((Operations::Division, Box::new(Op{ x: 2_f32, operation: None})))};
-    let div_and_add = Op {x:1_f32,operation:Some((Operations::Plus, Box::new(Op { x: 5_f32, operation: Some((Operations::Division, Box::new(Op { x: 2_f32, operation: None }))) })))};
+    let add = Operation { x: 1_f32, operation: Some((Operateur::Plus, Box::new(Operation { x: 1_f32, operation: None }))) };
+    let minus = Operation {x:3_f32,operation:Some((Operateur::Moins, Box::new(Operation { x: 2_f32, operation: None})))};
+    let div_zero = Operation {x:3_f32,operation:Some((Operateur::Division, Box::new(Operation { x: 0_f32, operation: None})))};
+    let div = Operation {x:3_f32,operation:Some((Operateur::Division, Box::new(Operation { x: 2_f32, operation: None})))};
+    let div_and_add = Operation {x:1_f32,operation:Some((Operateur::Plus, Box::new(Operation { x: 5_f32, operation: Some((Operateur::Division, Box::new(Operation { x: 2_f32, operation: None }))) })))};
     println!("{}", &add.read_op());
     println!("{}", &minus.read_op());
     println!("{}", &div.read_op());
