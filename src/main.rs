@@ -38,62 +38,46 @@ impl Operateur {
             _ => panic!("{}", "Operateur inconnu")
         }
     }
+
+    fn to_string(&self) -> &'static str {
+        match self {
+            Self::Plus => "+",
+            Self::Moins => "-",
+            Self::Division => "/",
+            Self::Multiplication => "*"
+        }
+    }
 }
 
-struct Operation {
-    x: f32,
-    operation: Option<(Operateur, Box<Operation>)>,
+enum Operation {
+    Number(f32),
+    NumberExprNumber(f32, Operateur, f32),
+    NumberExprNode(f32, Operateur, Box<Operation>),
+    NodeExprNode(Box<Operation>, Operateur, Box<Operation>)
 }
 
 impl Operation {
-    pub fn new(nombre: f32, operation_suite: Option<(Operateur, Operation)>) -> Self {
-        match operation_suite {
-            None => Self { x: nombre, operation: None },
-            Some((operateur, suite)) => Self { x: nombre, operation: Some((operateur, Box::new(suite))) }
-        }
-    }
 
-    pub fn new_by_string(operation_string: &'static str) -> Operation {
-        fn parse_string_operation(mut operation_vector: Vec<&'static str>) -> Operation {
-            let number = operation_vector[0];
-            operation_vector.remove(0);
-            if operation_vector.len() > 1 {
-                let operateur = operation_vector.remove(0);
-                Operation::new(number.parse().unwrap(), Some((Operateur::operateur_by_string(operateur), parse_string_operation(operation_vector))))
-            } else if operation_vector.len() > 0 {
-                panic!("Problème de structure de l'opération")
-            } else {
-                Operation::new(number.parse().unwrap(), None)
-            }
-        }
-
-        parse_string_operation(operation_string.split(' ').collect())
-    }
-
-    fn calcule_operation(&self) -> f32 {
+    fn to_string(&self) -> String {
         match self {
-            Self { x: a, operation: None } => *a,
-            Self { x: a, operation: Some((op, ref t)) } => op.run_read_result(*a, t.calcule_operation())
+            Self::Number(x ) => x.to_string(),
+            Self::NumberExprNumber(x, op, y) => {
+                String::from(x.to_string() + op.to_string() + &*y.to_string())
+            },
+            Self::NumberExprNode(x, op, ref node) => {
+                String::from(x.to_string()+op.to_string()+&*node.to_string())
+            },
+            Self::NodeExprNode(ref node1, op, ref node2) => {
+                String::from(node1.to_string()+op.to_string()+&*node2.to_string())
+            },
         }
     }
 }
 
-
 fn main() {
     println!("Hello, world!");
-    let addition = Operation::new(1_f32, Some((Operateur::Plus, Operation { x: 1_f32, operation: None })));
-    let soustraction = Operation::new(3_f32, Some((Operateur::Moins, Operation { x: 2_f32, operation: None })));
-    let division = Operation::new(3_f32, Some((Operateur::Division, Operation { x: 2_f32, operation: None })));
-    let multiplication = Operation::new(3_f32, Some((Operateur::Multiplication, Operation { x: 2_f32, operation: None })));
-    let division_and_addition = Operation::new(1_f32, Some((Operateur::Plus, Operation::new(5_f32, Some((Operateur::Division, Operation { x: 2_f32, operation: None }))))));
-    println!("Résultat de 1+1 = {}", &addition.calcule_operation());
-    println!("Résultat de 3-2 = {}", &soustraction.calcule_operation());
-    println!("Résultat de 3/2 = {}", &division.calcule_operation());
-    println!("Résultat de 3*2 = {}", &multiplication.calcule_operation());
-    println!("Résultat de 1+5/2 = {}", &division_and_addition.calcule_operation());
-    // Decommente les lignes ci-dessous le programme plante à cause d'une divion par 0
-    /*let division_zero = Operation::new(3_f32, Some((Operateur::Division, Operation { x: 0_f32, operation: None })));
-    println!("Résultat de la divison 3/0 = {}", &division_zero.calcule_operation());*/
-
-    println!("Résultat de 1+5/2 à partir d'une string = {}", Operation::new_by_string("1 + 5 / 2").calcule_operation());
+    println!("{}",Operation::Number(1.00).to_string());
+    println!("{}",Operation::NumberExprNumber(1.00, Operateur::Plus, 2.00).to_string());
+    println!("{}",Operation::NumberExprNode(1.00, Operateur::Plus, Box::from(Operation::NumberExprNumber(1.00, Operateur::Moins, 2.00))).to_string());
+    println!("{}",Operation::NodeExprNode(Box::from(Operation::NumberExprNumber(2.00, Operateur::Multiplication, 2.00)), Operateur::Plus, Box::from(Operation::NumberExprNumber(1.00, Operateur::Division, 2.00))).to_string());
 }
