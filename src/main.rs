@@ -25,7 +25,12 @@ impl Operateur {
             "-" => Ok(Self::Moins),
             "*" => Ok(Self::Multiplication),
             "/" => Ok(Self::Division),
-            _ => Err(String::from("Operateur inconnu"))
+            _ => Err({
+                let mut error = String::from("Operateur ");
+                error.push_str(operateur);
+                error.push_str(" inconnu");
+                error
+            })
         }
     }
 }
@@ -47,14 +52,13 @@ impl Operation {
         fn vector_to_operation(op_vector: Vec<&'static str>, index: i8) -> Vec<Expr> {
             let t = match index {
                 index if index % 2 == 0 => Expr::Number(op_vector[index as usize].parse().unwrap()),
-                index if index % 2 != 0 => {
+                index => {
                     let operateur = Operateur::operateur_by_string(op_vector[index as usize]);
                     match operateur {
                         Ok(e) => Expr::Token(e),
                         Err(e) => panic!("{}", e)
                     }
                 }
-                _ => panic!("Error avec l'index")
             };
             let mut v = vec![t];
             let index = index + 1;
@@ -108,7 +112,10 @@ impl Operation {
                                     let index = index - 1;
                                     // On remplace le nombre se trouvant devant l'opérateur par le résultat
                                     vector_op[index as usize] = Expr::Number(i);
-                                    if vector_op.len() < index as usize {
+                                    if vector_op.len() == 1 {
+                                        i
+                                    }
+                                    else if vector_op.len() < index as usize {
                                         evaluate_not_prio(vector_op, 0)
                                     } else {
                                         evaluate_prio(vector_op, index)
@@ -170,7 +177,7 @@ impl Operation {
 
 fn main() {
     println!("Hello, world!");
-    let t = "8 + 25 * 2 / 50 + 10";
+    let t = "8 * 5 + 5 - 8 / 2 + 5 - 1";
     let r = Operation::string_to_operation(t);
     println!("{} = {:?}", t, r.operation);
     println!("{} = {}", t, r.evaluate_operation());
