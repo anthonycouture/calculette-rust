@@ -1,5 +1,4 @@
-use std::borrow::Borrow;
-
+#[derive(Debug)]
 enum Operateur {
     Plus,
     Moins,
@@ -8,133 +7,171 @@ enum Operateur {
 }
 
 impl Operateur {
-    fn run(&self, x: f32, y: f32) -> Result<f32, &'static str> {
+    fn run(&self, x: f32, y: f32) -> Result<f32, String> {
         match self {
             Self::Plus => Ok(x + y),
             Self::Moins => Ok(x - y),
             Self::Division => match y {
-                y if y == 0.00 => Err("Division par 0"),
+                y if y == 0.00 => Err(String::from("Division par 0")),
                 _ => Ok(x / y)
             },
             Self::Multiplication => Ok(x * y)
         }
     }
 
-    fn read_result(result: Result<f32, &'static str>) -> f32 {
-        match result {
-            Ok(v) => v,
-            Err(e) => panic!("{}", e),
-        }
-    }
-
-    fn run_read_result(&self, x: f32, y: f32) -> f32 {
-        Operateur::read_result(Operateur::run(self, x, y))
-    }
-
-    pub fn operateur_by_string(operateur: &'static str) -> Self {
+    pub fn operateur_by_string(operateur: &'static str) -> Result<Self, String> {
         match operateur {
-            "+" => Self::Plus,
-            "-" => Self::Moins,
-            "*" => Self::Multiplication,
-            "/" => Self::Division,
-            _ => panic!("{}", "Operateur inconnu")
-        }
-    }
-
-    fn to_string(&self) -> &'static str {
-        match self {
-            Self::Plus => "+",
-            Self::Moins => "-",
-            Self::Division => "/",
-            Self::Multiplication => "*"
+            "+" => Ok(Self::Plus),
+            "-" => Ok(Self::Moins),
+            "*" => Ok(Self::Multiplication),
+            "/" => Ok(Self::Division),
+            _ => Err(String::from("Operateur inconnu"))
         }
     }
 }
 
+#[derive(Debug)]
 enum Expr {
     Number(f32),
     Token(Operateur),
 }
 
-enum Operation {
-    Number(f32),
-    NumberOperateurNumber(f32, Operateur, f32),
-    NumberOperateurNode(f32, Operateur, Box<Operation>),
-    NodeOperateurNode(Box<Operation>, Operateur, Box<Operation>),
+
+#[derive(Debug)]
+struct Operation {
+    operation: Vec<Expr>
 }
 
 impl Operation {
     pub fn string_to_operation(op: &'static str) -> Operation {
-        fn verif_operation(mut op_vec: Vec<&'static str>, is_operateur: bool) -> Vec<Expr> {
-            let i = op_vec[0];
-            op_vec.remove(0);
-            let mut vec_expr: Vec<Expr> = Vec::new();
-            match is_operateur {
-                false => {
-                    vec_expr.push(Expr::Number(i.parse::<f32>().unwrap()));
+        fn vector_to_operation(op_vector: Vec<&'static str>, index: i8) -> Vec<Expr> {
+            let t = match index {
+                index if index % 2 == 0 => Expr::Number(op_vector[index as usize].parse().unwrap()),
+                index if index % 2 != 0 => {
+                    let operateur = Operateur::operateur_by_string(op_vector[index as usize]);
+                    match operateur {
+                        Ok(e) => Expr::Token(e),
+                        Err(e) => panic!("{}", e)
+                    }
                 }
-                true => {
-                    vec_expr.push(Expr::Token(Operateur::operateur_by_string(i)));
-                }
+                _ => panic!("Error avec l'index")
+            };
+            let mut v = vec![t];
+            let index = index + 1;
+            if op_vector.len() > index as usize {
+                v.append(&mut vector_to_operation(op_vector, index));
             }
-            if op_vec.len() > 0 {
-                vec_expr.append(&mut verif_operation(op_vec, !is_operateur));
-            }
-            vec_expr
+            v
         }
-        fn is_token_faible(op_vec: Vec<&Expr>, index: i8) -> i8 {
-            if op_vec.len() > 0 {
-                let i = op_vec[0];
-                let mut op_vec = op_vec.clone();
-                op_vec.remove(0);
-                match i {
-                    Expr::Token(e) => {
-                        match e {
-                            Operateur::Moins | Operateur::Plus => index,
-                            _ => {
-                                let index = index + 1;
-                                is_token_faible(op_vec, index)
+        let operation: Vec<&str> = op.split(' ').collect();
+        if operation.len() % 2 == 0 {
+            panic!("Operation incorrect");
+        }
+        Operation { operation: vector_to_operation(operation, 0) }
+    }
+
+    fn evaluate_operation(self) -> f32 {
+        fn evaluate_prio(mut vector_op: Vec<Expr>, index: i8) -> f32 {
+            let expr = &vector_op[index as usize];
+            match expr {
+                Expr::Number(_) => {
+                    let index = index + 1;
+                    if vector_op.len() > index as usize {
+                        evaluate_prio(vector_op, index)
+                    } else {
+                        evaluate_not_prio(vector_op, 0)
+                    }
+                }
+                Expr::Token(operateur) => {
+                    match operateur {
+                        Operateur::Moins | Operateur::Plus => {
+                            let index = index + 1;
+                            evaluate_prio(vector_op, index)
+                        }
+                        Operateur::Multiplication | Operateur::Division => {
+                            let x = match vector_op[(index-1) as usize] {
+                                Expr::Number(e) => e,
+                                _ => panic!("Ce n'est pas un nombre")
+                            };
+                            let y = match vector_op[(index+1) as usize] {
+                                Expr::Number(e) => e,
+                                _ => panic!("Ce n'est pas un nombre")
+                            };
+                            let r = operateur.run(x, y);
+                            match r {
+                                Err(e) => panic!("{}", e),
+                                Ok(i) => {
+                                    // On supprime l'opérateur
+                                    vector_op.remove(index as usize);
+                                    // Comme le nombre suivant l'opérateur à pris sa place on le supprime aussi
+                                    vector_op.remove(index as usize);
+                                    let index = index - 1;
+                                    // On remplace le nombre se trouvant devant l'opérateur par le résultat
+                                    vector_op[index as usize] = Expr::Number(i);
+                                    if vector_op.len() < index as usize {
+                                        evaluate_not_prio(vector_op, 0)
+                                    } else {
+                                        evaluate_prio(vector_op, index)
+                                    }
+                                }
                             }
                         }
                     }
-                    _ => {
-                        let index = index + 1;
-                        is_token_faible(op_vec, index)
+                }
+            }
+        }
+
+        fn evaluate_not_prio(mut vector_op: Vec<Expr>, index: i8) -> f32 {
+            let expr = &vector_op[index as usize];
+            match expr {
+                Expr::Number(_) => {
+                    let index = index + 1;
+                    evaluate_not_prio(vector_op, index)
+                }
+                Expr::Token(operateur) => {
+                    match operateur {
+                        Operateur::Multiplication | Operateur::Division => panic!("Les opérateurs prioritaires sont a faire avant"),
+                        Operateur::Moins | Operateur::Plus => {
+                            let x = match vector_op[(index-1) as usize] {
+                                Expr::Number(e) => e,
+                                _ => panic!("Ce n'est pas un nombre")
+                            };
+                            let y = match vector_op[(index+1) as usize] {
+                                Expr::Number(e) => e,
+                                _ => panic!("Ce n'est pas un nombre")
+                            };
+                            let r = operateur.run(x, y);
+                            match r {
+                                Err(e) => panic!("{}", e),
+                                Ok(i) => {
+                                    // On supprime l'opérateur
+                                    vector_op.remove(index as usize);
+                                    // Comme le nombre suivant l'opérateur à pris sa place on le supprime aussi
+                                    vector_op.remove(index as usize);
+                                    let index = index - 1;
+                                    // On remplace le nombre se trouvant devant l'opérateur par le résultat
+                                    vector_op[index as usize] = Expr::Number(i);
+                                    if vector_op.len() == 1 {
+                                        i
+                                    } else {
+                                        evaluate_not_prio(vector_op, index)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-            } else {
-                -1
             }
         }
-        let mut op_vec: Vec<&'static str> = op.split(' ').collect();
-        if op_vec.len() % 2 == 0 {
-            panic!("Operation incorrecte");
-        }
-        let expr_vec = verif_operation(op_vec.clone(), false);
-        Operation::Number(0.00)
-    }
-
-    fn to_string(&self) -> String {
-        match self {
-            Self::Number(x) => x.to_string(),
-            Self::NumberOperateurNumber(x, op, y) => {
-                String::from(x.to_string() + op.to_string() + &*y.to_string())
-            }
-            Self::NumberOperateurNode(x, op, ref node) => {
-                String::from(x.to_string() + op.to_string() + &*node.to_string())
-            }
-            Self::NodeOperateurNode(ref node1, op, ref node2) => {
-                String::from(node1.to_string() + op.to_string() + &*node2.to_string())
-            }
-        }
+        let op = self.operation;
+        evaluate_prio(op, 0)
     }
 }
 
 fn main() {
     println!("Hello, world!");
-    println!("{}", Operation::Number(1.00).to_string());
-    println!("{}", Operation::NumberOperateurNumber(1.00, Operateur::Plus, 2.00).to_string());
-    println!("{}", Operation::NumberOperateurNode(1.00, Operateur::Plus, Box::from(Operation::NumberOperateurNumber(1.00, Operateur::Moins, 2.00))).to_string());
-    println!("{}", Operation::NodeOperateurNode(Box::from(Operation::NumberOperateurNumber(2.00, Operateur::Multiplication, 2.00)), Operateur::Plus, Box::from(Operation::NumberOperateurNumber(1.00, Operateur::Division, 2.00))).to_string());
-    Operation::string_to_operation("1 * 1 * 1 + 1");
+    let t = "8 + 25 * 2 / 50 + 10";
+    let r = Operation::string_to_operation(t);
+    println!("{} = {:?}", t, r.operation);
+    println!("{} = {}", t, r.evaluate_operation());
 }
