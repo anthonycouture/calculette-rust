@@ -1,44 +1,9 @@
-#[derive(Debug)]
-enum Operateur {
-    Plus,
-    Moins,
-    Division,
-    Multiplication,
-}
-
-impl Operateur {
-    fn run(&self, x: f32, y: f32) -> Result<f32, String> {
-        match self {
-            Self::Plus => Ok(x + y),
-            Self::Moins => Ok(x - y),
-            Self::Division => match y {
-                y if y == 0.00 => Err(String::from("Division par 0")),
-                _ => Ok(x / y)
-            },
-            Self::Multiplication => Ok(x * y)
-        }
-    }
-
-    pub fn operateur_by_string(operateur: &'static str) -> Result<Self, String> {
-        match operateur {
-            "+" => Ok(Self::Plus),
-            "-" => Ok(Self::Moins),
-            "*" => Ok(Self::Multiplication),
-            "/" => Ok(Self::Division),
-            _ => Err({
-                let mut error = String::from("Operateur ");
-                error.push_str(operateur);
-                error.push_str(" inconnu");
-                error
-            })
-        }
-    }
-}
+mod operateur;
 
 #[derive(Debug)]
 enum Expr {
     Number(f32),
-    Token(Operateur),
+    Token(operateur::Operateur),
 }
 
 
@@ -53,7 +18,7 @@ impl Operation {
             let t = match index {
                 index if index % 2 == 0 => Expr::Number(op_vector[index as usize].parse().unwrap()),
                 index => {
-                    let operateur = Operateur::operateur_by_string(op_vector[index as usize]);
+                    let operateur = operateur::Operateur::operateur_by_string(op_vector[index as usize]);
                     match operateur {
                         Ok(e) => Expr::Token(e),
                         Err(e) => panic!("{}", e)
@@ -91,11 +56,11 @@ impl Operation {
                 }
                 Expr::Token(operateur) => {
                     match operateur {
-                        Operateur::Moins | Operateur::Plus => {
+                        operateur::Operateur::Moins | operateur::Operateur::Plus => {
                             let index = index + 1;
                             evaluate_prio(vector_op, index)
                         }
-                        Operateur::Multiplication | Operateur::Division => {
+                        operateur::Operateur::Multiplication | operateur::Operateur::Division => {
                             let x = match vector_op[(index-1) as usize] {
                                 Expr::Number(e) => e,
                                 _ => panic!("Ce n'est pas un nombre")
@@ -141,8 +106,8 @@ impl Operation {
                 }
                 Expr::Token(operateur) => {
                     match operateur {
-                        Operateur::Multiplication | Operateur::Division => panic!("Les opérateurs prioritaires sont a faire avant"),
-                        Operateur::Moins | Operateur::Plus => {
+                        operateur::Operateur::Multiplication | operateur::Operateur::Division => panic!("Les opérateurs prioritaires sont a faire avant"),
+                        operateur::Operateur::Moins | operateur::Operateur::Plus => {
                             let x = match vector_op[(index-1) as usize] {
                                 Expr::Number(e) => e,
                                 _ => panic!("Ce n'est pas un nombre")
