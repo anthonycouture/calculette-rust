@@ -78,9 +78,12 @@ impl Operation {
         fn evaluate_prio(mut vector_op: Vec<Expr>, index: i8) -> f32 {
             let expr = &vector_op[index as usize];
             match expr {
-                Expr::Number(_) => {
+                Expr::Number(i) => {
                     let index = index + 1;
-                    if vector_op.len() > index as usize {
+                    if vector_op.len() == 1 {
+                        *i
+                    }
+                    else if vector_op.len() > index as usize {
                         evaluate_prio(vector_op, index)
                     } else {
                         evaluate_not_prio(vector_op, 0)
@@ -112,10 +115,7 @@ impl Operation {
                                     let index = index - 1;
                                     // On remplace le nombre se trouvant devant l'opérateur par le résultat
                                     vector_op[index as usize] = Expr::Number(i);
-                                    if vector_op.len() == 1 {
-                                        i
-                                    }
-                                    else if vector_op.len() < index as usize {
+                                    if vector_op.len() < index as usize {
                                         evaluate_not_prio(vector_op, 0)
                                     } else {
                                         evaluate_prio(vector_op, index)
@@ -131,9 +131,13 @@ impl Operation {
         fn evaluate_not_prio(mut vector_op: Vec<Expr>, index: i8) -> f32 {
             let expr = &vector_op[index as usize];
             match expr {
-                Expr::Number(_) => {
+                Expr::Number(i) => {
                     let index = index + 1;
-                    evaluate_not_prio(vector_op, index)
+                    if vector_op.len() == 1 {
+                        *i
+                    } else {
+                        evaluate_not_prio(vector_op, index)
+                    }
                 }
                 Expr::Token(operateur) => {
                     match operateur {
@@ -177,8 +181,16 @@ impl Operation {
 
 fn main() {
     println!("Hello, world!");
-    let t = "8 * 5 + 5 - 8 / 2 + 5 - 1";
-    let r = Operation::string_to_operation(t);
-    println!("{} = {:?}", t, r.operation);
-    println!("{} = {}", t, r.evaluate_operation());
+    let list_operation = vec!["3 * 4 / 2 + 3", "2 / 5 * 7 + 6.8",
+                              "6 * 6 * 8 - 7 / 2 + 8 / 9 - 4", "0 / 1 - 7 + 78 / 7 / 7",
+                              "7 - 8 * 1 / 1 + 1", "1", "1 * 1", "1 + 1"];
+    let list_response = vec![9.00, 9.6, 281.3889, -5.408163265306, 0.00, 1.00, 1.00, 2.00];
+    let mut i = 0;
+    for t in list_operation {
+        let r = Operation::string_to_operation(t);
+        //println!("{} = {:?}", t, r.operation);
+        let response = r.evaluate_operation();
+        println!("{} = {} {}", t, response, response== list_response[i]);
+        i = i +1;
+    }
 }
